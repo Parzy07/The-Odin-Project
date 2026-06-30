@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { apiFetch, WS_URL } from "../api";
 import type { ConnectionConfig, ConnectionStatus, PortfolioSnapshot } from "../types";
-
-const WS_URL =
-  import.meta.env.VITE_WS_URL ||
-  `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws/portfolio`;
-
-const API_BASE = import.meta.env.VITE_API_URL || "";
 
 export function usePortfolio() {
   const [snapshot, setSnapshot] = useState<PortfolioSnapshot | null>(null);
@@ -17,7 +12,7 @@ export function usePortfolio() {
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchStatus = useCallback(async () => {
-    const res = await fetch(`${API_BASE}/api/status`);
+    const res = await apiFetch("/api/status");
     if (!res.ok) throw new Error("Failed to fetch status");
     const data: ConnectionStatus = await res.json();
     setStatus(data);
@@ -64,7 +59,10 @@ export function usePortfolio() {
     };
 
     ws.onerror = () => {
-      setError("WebSocket connection error");
+      setError(
+        "WebSocket connection failed. Open http://localhost:8000 (single server) " +
+          "or ensure the backend is running on port 8000.",
+      );
     };
   }, []);
 
@@ -82,7 +80,7 @@ export function usePortfolio() {
     setConnecting(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/connect`, {
+      const res = await apiFetch("/api/connect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: config ? JSON.stringify(config) : "{}",
@@ -103,7 +101,7 @@ export function usePortfolio() {
   const disconnect = async () => {
     setConnecting(true);
     try {
-      const res = await fetch(`${API_BASE}/api/disconnect`, { method: "POST" });
+      const res = await apiFetch("/api/disconnect", { method: "POST" });
       const data: ConnectionStatus = await res.json();
       setStatus(data);
     } catch (err) {
@@ -115,7 +113,7 @@ export function usePortfolio() {
 
   const setAccount = async (account: string) => {
     try {
-      const res = await fetch(`${API_BASE}/api/account/${encodeURIComponent(account)}`, {
+      const res = await apiFetch(`/api/account/${encodeURIComponent(account)}`, {
         method: "POST",
       });
       const data: ConnectionStatus = await res.json();

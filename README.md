@@ -40,20 +40,25 @@ cp .env.example .env
 # Edit .env — set DEMO_MODE=false when connecting to real IBKR
 ```
 
-### 2. Start the backend
+### 2. Start the app (recommended — single port)
 
 ```bash
-cd backend
+cd frontend && npm install && npm run build
+cd ../backend
 pip install -r requirements.txt
-DEMO_MODE=true python3 -m uvicorn app.main:app --reload --port 8000
+DEMO_MODE=true python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-### 3. Start the frontend
+Open **http://localhost:8000** — the UI, API, and WebSocket all run on one port.
+
+### Alternative: separate dev servers
 
 ```bash
-cd frontend
-npm install
-npm run dev
+# Terminal 1 — Backend
+cd backend && DEMO_MODE=true python3 -m uvicorn app.main:app --reload --port 8000
+
+# Terminal 2 — Frontend (proxies /api and /ws to backend)
+cd frontend && npm run dev
 ```
 
 Open **http://localhost:5173** in your browser.
