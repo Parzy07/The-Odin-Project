@@ -33,18 +33,43 @@ app = FastAPI(
 )
 
 origins = [origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()]
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins or ["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+allow_all_origins = "*" in origins
+
+if allow_all_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?$",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 
 @app.get("/api/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/api/server-info")
+async def server_info():
+    return {
+        "bind_host": settings.bind_host,
+        "bind_port": settings.bind_port,
+        "demo_mode": settings.demo_mode,
+        "ib_default_host": settings.ib_host,
+        "ib_default_port": settings.ib_port,
+        "ib_default_client_id": settings.ib_client_id,
+        "cors_origins": settings.cors_origins,
+    }
 
 
 @app.get("/api/status")

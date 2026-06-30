@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { apiFetch, WS_URL } from "../api";
+import { apiFetch, getWsUrl } from "../api";
 import type { ConnectionConfig, ConnectionStatus, PortfolioSnapshot } from "../types";
 
 export function usePortfolio() {
@@ -22,7 +22,7 @@ export function usePortfolio() {
   const connectWs = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
-    const ws = new WebSocket(WS_URL);
+    const ws = new WebSocket(getWsUrl());
     wsRef.current = ws;
 
     ws.onopen = () => {
@@ -60,8 +60,8 @@ export function usePortfolio() {
 
     ws.onerror = () => {
       setError(
-        "WebSocket connection failed. Open http://localhost:8000 (single server) " +
-          "or ensure the backend is running on port 8000.",
+        `WebSocket failed at ${getWsUrl()}. ` +
+          "Use http://YOUR_LAN_IP:8000 (e.g. http://192.168.1.207:8000) and ensure the server binds to 0.0.0.0.",
       );
     };
   }, []);

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { fetchServerInfo } from "../api";
 import type { ConnectionConfig } from "../types";
 
 interface ConnectionPanelProps {
@@ -31,6 +32,18 @@ export function ConnectionPanel({
     client_id: 1,
     readonly: true,
   });
+
+  useEffect(() => {
+    fetchServerInfo().then((info) => {
+      if (!info) return;
+      setConfig((prev) => ({
+        ...prev,
+        host: info.ib_default_host,
+        port: info.ib_default_port,
+        client_id: info.ib_default_client_id,
+      }));
+    });
+  }, []);
 
   return (
     <div className="rounded-xl border border-white/5 bg-surface-raised p-5">
@@ -81,11 +94,12 @@ export function ConnectionPanel({
       {expanded && !connected && (
         <div className="mt-5 grid gap-4 border-t border-white/5 pt-5 sm:grid-cols-2 lg:grid-cols-4">
           <label className="block">
-            <span className="text-xs text-gray-400">Host</span>
+            <span className="text-xs text-gray-400">TWS / Gateway Host</span>
             <input
               type="text"
               value={config.host}
               onChange={(e) => setConfig({ ...config, host: e.target.value })}
+              placeholder="127.0.0.1 or 192.168.1.207"
               className="mt-1 w-full rounded-lg border border-white/10 bg-surface px-3 py-2 text-sm text-white focus:border-accent focus:outline-none"
             />
           </label>
@@ -125,7 +139,9 @@ export function ConnectionPanel({
               {connecting ? "Connecting…" : "Connect"}
             </button>
             <p className="mt-2 text-xs text-gray-500">
-              Requires TWS or IB Gateway running with API enabled. Paper: 7497, Live: 7496, Gateway: 4001.
+              TWS must allow API connections from this machine. In TWS: Configure → API → Settings →
+              add your server IP to <strong className="text-gray-400">Trusted IPs</strong>.
+              Ports: 7497 (paper), 7496 (live), 4001 (Gateway).
             </p>
           </div>
         </div>

@@ -27,7 +27,7 @@ A full-stack portfolio tracker that connects to **Interactive Brokers** via the 
 1. **Python 3.10+** and **Node.js 18+**
 2. **IB Gateway** or **Trader Workstation (TWS)** with API enabled:
    - Configure → API → Settings → Enable ActiveX and Socket Clients
-   - Add `127.0.0.1` to Trusted IPs
+   - Add `127.0.0.1` and your LAN IP (e.g. `192.168.1.207`) to Trusted IPs
    - Check "Download open orders on connection"
    - Default ports: **7497** (TWS paper), **7496** (TWS live), **4001** (Gateway)
 
@@ -50,6 +50,21 @@ DEMO_MODE=true python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 Open **http://localhost:8000** — the UI, API, and WebSocket all run on one port.
+
+### LAN access (phone, tablet, other PCs)
+
+Use your machine's IP instead of `localhost`:
+
+```
+http://192.168.1.207:8000
+```
+
+1. Start with `--host 0.0.0.0` (required for LAN)
+2. Set `IB_HOST` in `.env` to where TWS runs (`127.0.0.1` if same machine, or `192.168.1.207`)
+3. In TWS → Configure → API → Trusted IPs, add the IP of the machine running this app
+4. Allow port **8000** through your firewall
+
+**Important:** `localhost` only works on the machine running the server. Other devices must use your LAN IP.
 
 ### Alternative: separate dev servers
 

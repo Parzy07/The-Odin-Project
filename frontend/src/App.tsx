@@ -1,6 +1,7 @@
 import { ConnectionPanel } from "./components/ConnectionPanel";
 import { PositionsCharts } from "./components/PositionsCharts";
 import { PositionsTable } from "./components/PositionsTable";
+import { ServerAccessBanner } from "./components/ServerAccessBanner";
 import { StatusBadge, SummaryCard } from "./components/SummaryCard";
 import { usePortfolio } from "./hooks/usePortfolio";
 import { formatTime } from "./utils/format";
@@ -44,6 +45,8 @@ export default function App() {
             {error}
           </div>
         )}
+
+        <ServerAccessBanner />
 
         <ConnectionPanel
           connected={status?.connected ?? false}

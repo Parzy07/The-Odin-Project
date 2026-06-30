@@ -4,7 +4,7 @@ function resolveApiBase(): string {
   return "";
 }
 
-function resolveWsUrl(): string {
+export function getWsUrl(): string {
   const envWs = import.meta.env.VITE_WS_URL;
   if (envWs) return envWs;
 
@@ -12,18 +12,32 @@ function resolveWsUrl(): string {
   return `${protocol}//${window.location.host}/ws/portfolio`;
 }
 
-export const API_BASE = resolveApiBase();
-export const WS_URL = resolveWsUrl();
+export function getAppUrl(): string {
+  return `${window.location.protocol}//${window.location.host}`;
+}
 
 export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
-  const url = `${API_BASE}${path}`;
+  const base = resolveApiBase();
+  const url = `${base}${path}`;
   try {
     return await fetch(url, init);
   } catch {
     throw new Error(
-      `Cannot reach the server at ${url || path}. ` +
-        "Make sure the backend is running: " +
-        "cd backend && DEMO_MODE=true python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000",
+      `Cannot reach server at ${getAppUrl()}. ` +
+        `Start backend: cd backend && DEMO_MODE=true python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000`,
     );
   }
+}
+
+export async function fetchServerInfo() {
+  const res = await apiFetch("/api/server-info");
+  if (!res.ok) return null;
+  return res.json() as Promise<{
+    ib_default_host: string;
+    ib_default_port: number;
+    ib_default_client_id: number;
+    demo_mode: boolean;
+    bind_host: string;
+    bind_port: number;
+  }>;
 }
