@@ -21,14 +21,13 @@ export function ServerAccessBanner() {
         </p>
         <ul className="mt-3 list-inside list-disc space-y-1 text-xs text-gray-400">
           <li>
-            <strong className="text-gray-300">Cursor cloud:</strong> use the forwarded URL from
-            Cursor&apos;s <em>Ports</em> panel (port 8000), not{" "}
-            <span className="font-mono">192.168.1.207</span>
+            Run <span className="font-mono">./start.sh</span> in the project folder on your laptop
           </li>
           <li>
-            <strong className="text-gray-300">Run on your laptop:</strong> clone the repo, run{" "}
-            <span className="font-mono">./start.sh</span>, then open{" "}
-            <span className="font-mono">http://localhost:8000</span>
+            Then open <span className="font-mono">http://localhost:8000</span> (not 192.168.x.x)
+          </li>
+          <li>
+            Check terminal shows: <span className="font-mono">Uvicorn running on http://0.0.0.0:8000</span>
           </li>
         </ul>
       </div>
