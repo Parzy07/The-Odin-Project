@@ -1,4 +1,5 @@
 import { ConnectionPanel } from "./components/ConnectionPanel";
+import { PositionsCharts } from "./components/PositionsCharts";
 import { PositionsTable } from "./components/PositionsTable";
 import { StatusBadge, SummaryCard } from "./components/SummaryCard";
 import { usePortfolio } from "./hooks/usePortfolio";
@@ -80,6 +81,14 @@ export default function App() {
             highlight
           />
         </div>
+
+        <section>
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-white">Portfolio Charts</h2>
+            <p className="text-sm text-gray-500">Allocation, size, and P&amp;L at a glance</p>
+          </div>
+          <PositionsCharts positions={positions} />
+        </section>
 
         <section>
           <div className="mb-4 flex items-center justify-between">
