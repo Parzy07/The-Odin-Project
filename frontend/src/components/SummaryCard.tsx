@@ -27,10 +27,10 @@ export function SummaryCard({ label, value, subValue, highlight }: SummaryCardPr
 interface StatusBadgeProps {
   connected: boolean;
   demoMode: boolean;
-  wsConnected: boolean;
+  streamMode: "websocket" | "polling" | "offline";
 }
 
-export function StatusBadge({ connected, demoMode, wsConnected }: StatusBadgeProps) {
+export function StatusBadge({ connected, demoMode, streamMode }: StatusBadgeProps) {
   let label: string;
   let color: string;
 
@@ -45,6 +45,20 @@ export function StatusBadge({ connected, demoMode, wsConnected }: StatusBadgePro
     color = "bg-profit";
   }
 
+  const streamLabel =
+    streamMode === "websocket"
+      ? "Stream active"
+      : streamMode === "polling"
+        ? "Polling (2s)"
+        : "Server offline";
+
+  const streamColor =
+    streamMode === "websocket"
+      ? "bg-accent"
+      : streamMode === "polling"
+        ? "bg-amber-500"
+        : "bg-loss";
+
   return (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-2">
@@ -52,8 +66,8 @@ export function StatusBadge({ connected, demoMode, wsConnected }: StatusBadgePro
         <span className="text-sm font-medium text-gray-300">{label}</span>
       </div>
       <div className="flex items-center gap-1.5 text-xs text-gray-500">
-        <span className={`h-1.5 w-1.5 rounded-full ${wsConnected ? "bg-accent" : "bg-gray-600"}`} />
-        Stream {wsConnected ? "active" : "reconnecting"}
+        <span className={`h-1.5 w-1.5 rounded-full ${streamColor}`} />
+        {streamLabel}
       </div>
     </div>
   );

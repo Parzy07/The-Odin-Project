@@ -1,15 +1,60 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { apiFetch, getWsUrl } from "../api";
+import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { apiFetch, getAppUrl, getWsUrl } from "../api";
 import type { ConnectionConfig, ConnectionStatus, PortfolioSnapshot } from "../types";
+
+type StreamMode = "websocket" | "polling" | "offline";
+
+function applySnapshot(
+  data: PortfolioSnapshot,
+  setSnapshot: (s: PortfolioSnapshot) => void,
+  setStatus: Dispatch<SetStateAction<ConnectionStatus | null>>,
+) {
+  setSnapshot(data);
+  setStatus((prev) =>
+    prev
+      ? {
+          ...prev,
+          connected: data.connected,
+          demo_mode: data.demo_mode,
+          accounts: data.accounts,
+          active_account: data.account,
+          message: data.message,
+        }
+      : {
+          connected: data.connected,
+          demo_mode: data.demo_mode,
+          accounts: data.accounts,
+          active_account: data.account,
+          message: data.message,
+        },
+  );
+}
 
 export function usePortfolio() {
   const [snapshot, setSnapshot] = useState<PortfolioSnapshot | null>(null);
   const [status, setStatus] = useState<ConnectionStatus | null>(null);
-  const [wsConnected, setWsConnected] = useState(false);
+  const [streamMode, setStreamMode] = useState<StreamMode>("offline");
   const [error, setError] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const wsFailures = useRef(0);
+
+  const stopPolling = useCallback(() => {
+    if (pollTimer.current) {
+      clearInterval(pollTimer.current);
+      pollTimer.current = null;
+    }
+  }, []);
+
+  const fetchPortfolio = useCallback(async () => {
+    const res = await apiFetch("/api/portfolio");
+    if (!res.ok) throw new Error("Failed to fetch portfolio");
+    const data: PortfolioSnapshot = await res.json();
+    applySnapshot(data, setSnapshot, setStatus);
+    return data;
+  }, []);
 
   const fetchStatus = useCallback(async () => {
     const res = await apiFetch("/api/status");
@@ -19,6 +64,16 @@ export function usePortfolio() {
     return data;
   }, []);
 
+  const startPolling = useCallback(() => {
+    stopPolling();
+    setStreamMode("polling");
+    setError(null);
+    fetchPortfolio().catch((err) => setError(String(err)));
+    pollTimer.current = setInterval(() => {
+      fetchPortfolio().catch(() => {});
+    }, 2000);
+  }, [fetchPortfolio, stopPolling]);
+
   const connectWs = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
@@ -26,55 +81,52 @@ export function usePortfolio() {
     wsRef.current = ws;
 
     ws.onopen = () => {
-      setWsConnected(true);
+      wsFailures.current = 0;
+      stopPolling();
+      setStreamMode("websocket");
       setError(null);
     };
 
     ws.onmessage = (event) => {
       const data: PortfolioSnapshot = JSON.parse(event.data);
-      setSnapshot(data);
-      setStatus((prev: ConnectionStatus | null) =>
-        prev
-          ? {
-              ...prev,
-              connected: data.connected,
-              demo_mode: data.demo_mode,
-              accounts: data.accounts,
-              active_account: data.account,
-              message: data.message,
-            }
-          : {
-              connected: data.connected,
-              demo_mode: data.demo_mode,
-              accounts: data.accounts,
-              active_account: data.account,
-              message: data.message,
-            },
-      );
+      applySnapshot(data, setSnapshot, setStatus);
     };
 
     ws.onclose = () => {
-      setWsConnected(false);
+      setStreamMode("offline");
+      wsFailures.current += 1;
+
+      if (wsFailures.current >= 2) {
+        startPolling();
+        return;
+      }
+
       reconnectTimer.current = setTimeout(connectWs, 3000);
     };
 
     ws.onerror = () => {
-      setError(
-        `WebSocket failed at ${getWsUrl()}. ` +
-          "Use http://YOUR_LAN_IP:8000 (e.g. http://192.168.1.207:8000) and ensure the server binds to 0.0.0.0.",
-      );
+      ws.close();
     };
-  }, []);
+  }, [startPolling, stopPolling]);
 
   useEffect(() => {
-    fetchStatus().catch((err) => setError(String(err)));
+    fetchStatus()
+      .then(() => fetchPortfolio())
+      .catch((err) => {
+        setStreamMode("offline");
+        setError(
+          `${String(err)} — Open this app at ${getAppUrl()}. ` +
+            "If using Cursor, open the forwarded port URL from the Ports panel (not 192.168.x.x).",
+        );
+      });
     connectWs();
 
     return () => {
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
+      stopPolling();
       wsRef.current?.close();
     };
-  }, [connectWs, fetchStatus]);
+  }, [connectWs, fetchPortfolio, fetchStatus, stopPolling]);
 
   const connect = async (config?: ConnectionConfig) => {
     setConnecting(true);
@@ -88,6 +140,7 @@ export function usePortfolio() {
       if (!res.ok) throw new Error("Connection request failed");
       const data: ConnectionStatus = await res.json();
       setStatus(data);
+      await fetchPortfolio();
       if (!data.connected) {
         setError(data.message || "Failed to connect to IBKR");
       }
@@ -104,6 +157,7 @@ export function usePortfolio() {
       const res = await apiFetch("/api/disconnect", { method: "POST" });
       const data: ConnectionStatus = await res.json();
       setStatus(data);
+      await fetchPortfolio();
     } catch (err) {
       setError(String(err));
     } finally {
@@ -118,6 +172,7 @@ export function usePortfolio() {
       });
       const data: ConnectionStatus = await res.json();
       setStatus(data);
+      await fetchPortfolio();
     } catch (err) {
       setError(String(err));
     }
@@ -126,7 +181,8 @@ export function usePortfolio() {
   return {
     snapshot,
     status,
-    wsConnected,
+    streamMode,
+    wsConnected: streamMode === "websocket",
     error,
     connecting,
     connect,

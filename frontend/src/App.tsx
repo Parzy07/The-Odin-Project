@@ -10,7 +10,7 @@ export default function App() {
   const {
     snapshot,
     status,
-    wsConnected,
+    streamMode,
     error,
     connecting,
     connect,
@@ -34,7 +34,7 @@ export default function App() {
           <StatusBadge
             connected={status?.connected ?? false}
             demoMode={status?.demo_mode ?? false}
-            wsConnected={wsConnected}
+            streamMode={streamMode}
           />
         </div>
       </header>

@@ -60,11 +60,25 @@ http://192.168.1.207:8000
 ```
 
 1. Start with `--host 0.0.0.0` (required for LAN)
-2. Set `IB_HOST` in `.env` to where TWS runs (`127.0.0.1` if same machine, or `192.168.1.207`)
-3. In TWS → Configure → API → Trusted IPs, add the IP of the machine running this app
+2. Set `IB_HOST=127.0.0.1` in `.env` if TWS runs on the same machine
+3. In TWS → Configure → API → Trusted IPs, add `127.0.0.1`
 4. Allow port **8000** through your firewall
 
 **Important:** `localhost` only works on the machine running the server. Other devices must use your LAN IP.
+
+### Laptop access (most common setup)
+
+**Option A — Run on your laptop (recommended)**
+
+```bash
+./start.sh
+```
+
+Then open **http://localhost:8000** in your laptop browser.
+
+**Option B — Cursor cloud agent**
+
+If the code runs in a Cursor cloud workspace, open the **forwarded port URL** from Cursor's **Ports** panel (port 8000). Do **not** use `192.168.1.207` — that is your laptop's IP, not the cloud server.
 
 ### Alternative: separate dev servers
 
